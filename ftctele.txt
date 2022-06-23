@@ -1,0 +1,172 @@
+//ftc package yay!
+package org.firstinspires.ftc.teamcode;
+
+//importing needed things
+import com.qualcomm.robotcore.*;
+import java.lang.Math;
+import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.CRServo;
+import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
+import com.qualcomm.robotcore.hardware.Servo;
+
+@TeleOp
+//beginning of class
+
+public class ftctele extends LinearOpMode {
+    @Override
+    public void runOpMode() throws InterruptedException {
+        //motors
+        DcMotor motorFrontLeft = hardwareMap.dcMotor.get("motorFrontLeft");
+        DcMotor motorBackLeft = hardwareMap.dcMotor.get("motorBackLeft");
+        DcMotor motorFrontRight = hardwareMap.dcMotor.get("motorFrontRight");
+        DcMotor motorBackRight = hardwareMap.dcMotor.get("motorBackRight");
+        DcMotor intake = hardwareMap.dcMotor.get("intake");
+        DcMotor slide = hardwareMap.dcMotor.get("slide");
+
+        //continuous servos
+        CRServo rightCarousel = hardwareMap.crservo.get("rightCarousel");
+        CRServo leftCarousel = hardwareMap.crservo.get("leftCarousel");
+
+
+        //other servo
+        Servo bucket = hardwareMap.servo.get("bucket");
+        Servo SEarm = hardwareMap.servo.get("SEarm");
+
+        //reversing the right motors for some reason
+        motorFrontRight.setDirection(DcMotorSimple.Direction.REVERSE);
+        motorBackRight.setDirection(DcMotorSimple.Direction.REVERSE);
+
+
+        //wait for button click
+        waitForStart();
+
+        // stop the program if button click
+        if (isStopRequested()) return;
+
+        //setting slide
+        if (slide.getCurrentPosition() != 0){
+            slide.setTargetPosition(0);
+            slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+            slide.setPower(1);
+        }
+        boolean slowMode = false;
+        slide.setTargetPosition(-600);
+        slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        slide.setPower(1);
+        bucket.setPosition(0.75);
+        //start of the teleop code/loop
+        while (opModeIsActive()) {
+            //current position
+            int currentPos = slide.getCurrentPosition();
+            //telemetry (putting info on driver hub i.e. positions)
+            telemetry.addData("Current Bucket Position: ", Double.toString(bucket.getPosition()));
+            telemetry.addData("Current SEarm Position: ", Double.toString(SEarm.getPosition()));
+            telemetry.addData("Current Slider Position: ", Integer.toString(slide.getCurrentPosition()));
+            telemetry.update();
+            //reversing the left stick y value
+            double y = gamepad1.left_stick_y;
+            //left stick x value
+            double x = gamepad1.left_stick_x;
+            //right stick x value
+            double rx = gamepad1.right_stick_x;
+
+            if (gamepad1.left_trigger != 0){
+                slowMode = true;
+            }
+            else if (gamepad1.right_trigger != 0){
+                slowMode = false;
+            }
+
+            if (slowMode){
+                //finally moving the motors
+                motorFrontLeft.setPower((y - x + rx)/2);
+                motorBackLeft.setPower((y + x + rx)/2);
+                motorFrontRight.setPower((y + x - rx)/2);
+                motorBackRight.setPower((y - x - rx)/2);
+            }
+            else{
+                //finally moving the motors
+                motorFrontLeft.setPower(y - x + rx);
+                motorBackLeft.setPower(y + x + rx);
+                motorFrontRight.setPower(y + x - rx);
+                motorBackRight.setPower(y - x - rx);
+            }
+
+            //carousel code
+            if (gamepad1.right_bumper) {
+                rightCarousel.setPower(0.5); //set power at half speed
+            }
+            else if (gamepad1.left_bumper) {
+                leftCarousel.setPower(-0.5);
+            }
+            else{
+                rightCarousel.setPower(0);
+                leftCarousel.setPower(0);
+            }
+
+            //intake
+            if (gamepad2.left_trigger != 0) {
+                intake.setPower(0.5);
+            }
+            else if (gamepad2.right_trigger != 0) {
+                intake.setPower(-0.5);
+            }
+            else {
+                intake.setPower(0);
+            }
+
+            //snaps back bucket at certain slide position
+            if (slide.getCurrentPosition() > -592){
+                bucket.setPosition(0.91);
+            }
+
+            //slide
+            if (gamepad2.dpad_up) {
+                currentPos = slide.getCurrentPosition();
+                if (slide.getCurrentPosition()-200 > -2087){
+                    currentPos = slide.getCurrentPosition();
+                    //set position
+                    slide.setTargetPosition(currentPos-200);
+
+                    //slider run :)
+                    slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    slide.setPower(1);
+                }
+            }
+            else if (gamepad2.dpad_down) {
+                currentPos = slide.getCurrentPosition();
+                if (slide.getCurrentPosition()+200 < -20){
+                    currentPos = slide.getCurrentPosition();
+                    //set position
+                    slide.setTargetPosition(currentPos + 200);
+
+                    //slider run :)
+                    slide.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                    slide.setPower(1);
+                }
+            }
+            else{
+                slide.setPower(0);
+            }
+
+            //bucket
+            if (gamepad2.x){
+                bucket.setPosition(bucket.getPosition() + 0.01);
+            }
+            if (gamepad2.y){
+                bucket.setPosition(bucket.getPosition() - 0.01);
+            }
+
+            //SEarm
+            if (gamepad2.left_bumper){
+                SEarm.setPosition(SEarm.getPosition() + 0.01);
+            }
+            if (gamepad2.right_bumper){
+                SEarm.setPosition(SEarm.getPosition() - 0.01);
+            }
+
+        }
+    }
+}
